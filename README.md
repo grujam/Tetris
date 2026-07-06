@@ -9,19 +9,16 @@
 ## 구현
 
 ### UI
-CPen 및 CBrush RAII로 생성 삭제 구현
-IDrawable 객체는 CRenderer에서 보유 후 WM_PAINT마다 전체 OnDraw 호출을 통해 그리기
-IDrawable은 Factory 함수로만 생성할 수 있도록 적용 → 무조건 CRenderer 배열에 저장된다
+IDrawable: 그리는 객체라면 해당 클래스 상속, Draw::CreateDrawable로만 생성하여 CRenderer의 그리는 대상 배열에 저장
+CPen, CBrush: 그리기 용 Pen 및 Brush RAII
+CRenderer: HDC, Hwnd 등 제공 용 및 전체적인 그리기 관리
 
 ### 게임 로직
-블록은 최대 가로 세로 4만큼 길이 이므로, 전체 블록 별 회전 값을 [8][4][4] 배열에 적용
-타입 회전 별로 4개의 포인트를 가져올 수 있다.
-
-충돌은 현재 해당 4개의 포인트값과 비교
+CTetrisManager: 전체적인 테트리스 관련 로직 처리
+CBoard: 테트리스가 일어나는 보드 UI. 프리뷰 박스, 점수, 게임 오버 등 표기
+CTetromino: 블록 UI, 타입 별 회전에 대한 전체 블록 값을 [8][4][4] 배열로 보관
 
 틱은 QueryPerformance 및 QueryCounter를 통해 구현.
 
+### 점수 계산
 1000점 당 1레벨, 레벨 당 드랍 시간 2 → 0.1f까지 조정
-
-블록 생성 시도 시 (SetNextBlock) 해당 위치가 막혀있으면 게임 패배
-
