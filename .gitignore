@@ -45,3 +45,6 @@
 *.suo
 *.debug
 *.vsidx
+
+#custom
+.rep

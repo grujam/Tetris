@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Renderer.h"
 #include "TetrisManager.h"
+#include "ResourceMgr.h"
 
 #include <windows.h>
 
@@ -14,6 +15,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
     {
         GET_RENDER()->Initialize(hwnd);
+        CResourceMgr::Get()->Initialize();
         CTetrisManager::Get()->Initialize();
         return 0;
     }
@@ -21,6 +23,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:
     {
         GET_RENDER()->OnResize(LOWORD(lParam), HIWORD(lParam));
+        return 0;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt{ LOWORD(lParam), HIWORD(lParam) };
+        CTetrisManager::Get()->OnClick(pt);
         return 0;
     }
     case WM_KEYDOWN:
@@ -35,15 +43,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case VK_UP:
             CTetrisManager::Get()->Rotate();
+            CTetrisManager::Get()->ChangeReplaySpeed(1);
             break;
         case VK_DOWN:
             CTetrisManager::Get()->SoftDrop();
+            CTetrisManager::Get()->ChangeReplaySpeed(-1);
             break;
         case VK_SPACE:
             CTetrisManager::Get()->HardDrop();
+            CTetrisManager::Get()->TogglePauseReplay();
             break;
         case 'H':
             CTetrisManager::Get()->Hold();
+            break;
+        case 'R':
+            CTetrisManager::Get()->RestartGame();
+            break;
+        case VK_ESCAPE:
+            CTetrisManager::Get()->ReturnToLobby();
             break;
         }
         return 0;
@@ -61,10 +78,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 
     case WM_ERASEBKGND:
-        // 백그라운드 지우기 방지 = 깜박임 방지
         return 1;
 
     case WM_DESTROY:
+        CNetworkManager::Get()->ShutDown();
         PostQuitMessage(0);
         return 0;
     }

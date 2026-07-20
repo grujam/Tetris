@@ -21,7 +21,6 @@ void CTetromino::SetRandomType()
 		static_cast<int>(ETetroBlockType::BLOCK_I),
 		static_cast<int>(ETetroBlockType::BLOCK_L));
 
-	//m_eBlockType = ETetroBlockType::BLOCK_I;
 	m_eBlockType = static_cast<ETetroBlockType>(uit(mertwist));
 }
 

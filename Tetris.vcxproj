@@ -128,31 +128,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Cornerstone\CLibraries\Singleton.h" />
+    <ClInclude Include="Singleton.h" />
     <ClInclude Include="Board.h" />
     <ClInclude Include="Brush.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="Draw.h" />
+    <ClInclude Include="Helper.h" />
+    <ClInclude Include="Lobby.h" />
     <ClInclude Include="Macros.h" />
+    <ClInclude Include="NetworkManager.h" />
     <ClInclude Include="Pen.h" />
+    <ClInclude Include="PlayerSession.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="ReplayManager.h" />
+    <ClInclude Include="ReplaySelect.h" />
+    <ClInclude Include="ResourceMgr.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TetrisManager.h" />
     <ClInclude Include="Tetromino.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Cornerstone\CLibraries\Singleton.cpp" />
     <ClCompile Include="Board.cpp" />
     <ClCompile Include="Brush.cpp" />
     <ClCompile Include="Draw.cpp" />
+    <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="Lobby.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NetworkManager.cpp" />
     <ClCompile Include="Pen.cpp" />
+    <ClCompile Include="PlayerSession.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="ReplayManager.cpp" />
+    <ClCompile Include="ReplaySelect.cpp" />
+    <ClCompile Include="ResourceMgr.cpp" />
+    <ClCompile Include="Singleton.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TetrisManager.cpp" />
+    <ClCompile Include="TetrisManagerMulti.cpp" />
     <ClCompile Include="Tetromino.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>

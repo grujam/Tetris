@@ -1,9 +1,23 @@
-#include "stdafx.h"
+Ôªø#include "stdafx.h"
 #include "Board.h"
 #include "Pen.h"
 #include "Brush.h"
 #include "Renderer.h"
-#include "TetrisManager.h"
+
+CBoard::CBoard(EBoardPosition InPosition)
+    : m_ePosition(InPosition)
+{
+}
+
+int CBoard::CalcCenterOffsetX() const
+{
+    switch (m_ePosition)
+    {
+    case EBoardPosition::Left:  return -m_MultiBoardGap;
+    case EBoardPosition::Right: return  m_MultiBoardGap;
+    default:                    return 0;
+    }
+}
 
 void CBoard::OnDraw()
 {
@@ -12,7 +26,7 @@ void CBoard::OnDraw()
 
     RECT rect;
     GetClientRect(GET_HWND(), &rect);
-    int nHorizonCenter = (rect.right - rect.left) / 2;
+    int nHorizonCenter = (rect.right - rect.left) / 2 + CalcCenterOffsetX();
     int nVerticalCenter = (rect.bottom - rect.top) / 2;
 
     m_arrBoardPoints[0] = POINT{ (LONG)(nHorizonCenter - m_BoardWidth / 2), rect.top };
@@ -27,13 +41,16 @@ void CBoard::OnDraw()
     DrawOccupied();
     DrawScoreandLevel();
     DrawGameOver();
+    DrawWinner();
+    DrawRestartVotes();
+    DrawReplayInfo();
 }
 
 POINT CBoard::GetCellOrigin(int InCol, int InRow) const
 {
     RECT rect;
     GetClientRect(GET_HWND(), &rect);
-    int nHorizonCenter = (rect.right - rect.left) / 2;
+    int nHorizonCenter = (rect.right - rect.left) / 2 + CalcCenterOffsetX();
 
     LONG boardLeft = nHorizonCenter - m_BoardWidth / 2;
     LONG boardTop = rect.top;
@@ -46,10 +63,11 @@ POINT CBoard::GetNextBoxOrigin() const
     RECT rect;
     GetClientRect(GET_HWND(), &rect);
 
+    LONG boardCenterX = (rect.right - rect.left) / 2 + CalcCenterOffsetX();
     LONG boxWidth = m_NextBoxSize * m_BlockSize;
     LONG margin = m_BlockSize;
 
-    return POINT{ rect.right - boxWidth - margin, rect.top + margin };
+    return POINT{ boardCenterX + m_BoardWidth / 2 + margin, rect.top + margin };
 }
 
 bool CBoard::IsCollision(const POINT* InShape, int InCol, int InRow) const
@@ -68,7 +86,7 @@ bool CBoard::IsCollision(const POINT* InShape, int InCol, int InRow) const
     return false;
 }
 
-void CBoard::LockTetromino(const POINT* InShape, int InCol, int InRow, ETetroBlockType InType)
+int CBoard::LockTetromino(const POINT* InShape, int InCol, int InRow, ETetroBlockType InType)
 {
     for (int i = 0; i < 4; ++i)
     {
@@ -79,7 +97,7 @@ void CBoard::LockTetromino(const POINT* InShape, int InCol, int InRow, ETetroBlo
             m_Occupied[col][row] = (int)InType;
     }
 
-    ClearFullLines();
+    return ClearFullLines();
 }
 
 void CBoard::DrawBorder()
@@ -92,14 +110,14 @@ void CBoard::DrawBorder()
     const LONG right = m_arrBoardPoints[1].x;
     const LONG bottom = m_arrBoardPoints[2].y;
 
-    // ¿ß / æ∆∑°
+    // Ï¢åÏö∞
     for (LONG x = left; x < right; x += m_BlockSize)
     {
         Rectangle(GET_HDC(), x, top, x + m_BlockSize, top + m_BlockSize);
         Rectangle(GET_HDC(), x, bottom, x + m_BlockSize, bottom + m_BlockSize);
     }
 
-    // ¡¬ / øÏ (ªÛ«œ ∏º≠∏ÆøÕ ∞„ƒ°¡ˆ æ ∞‘ top~bottom ±∏∞£∏∏)
+    //ÏÉÅÌïò
     for (LONG y = top; y <= bottom; y += m_BlockSize)
     {
         Rectangle(GET_HDC(), left - m_BlockSize, y, left, y + m_BlockSize);
@@ -146,13 +164,10 @@ void CBoard::DrawScoreandLevel()
     POINT scorePos{ boxOrigin.x, boxOrigin.y + boxSize + m_BlockSize / 2 };
     POINT levelPos{ boxOrigin.x, boxOrigin.y + boxSize + m_BlockSize };
 
-    int nScore = CTetrisManager::Get()->GetScore();
-    int nLevel = CTetrisManager::Get()->GetLevel();
-
     wchar_t buf[32];
-    swprintf_s(buf, L"SCORE: %d", nScore);
+    swprintf_s(buf, L"SCORE: %d", m_nDisplayScore);
     wchar_t buf2[32];
-    swprintf_s(buf2, L"Level: %d", nLevel);
+    swprintf_s(buf2, L"Level: %d", m_nDisplayLevel);
 
     SetTextColor(GET_HDC(), RGB_BLACK);
     SetBkMode(GET_HDC(), TRANSPARENT);
@@ -177,20 +192,98 @@ void CBoard::DrawGameOver()
 
     RECT titleRect{ left, centerY - m_BlockSize, right, centerY };
     RECT scoreRect{ left, centerY, right, centerY + m_BlockSize };
-    RECT levelRect{ left, centerY, right, centerY + m_BlockSize * 2 };
+    RECT levelRect{ left, centerY + m_BlockSize, right, centerY + m_BlockSize * 2 };
+    RECT hintRect{ left, centerY + m_BlockSize * 2, right, centerY + m_BlockSize * 3 };
 
     DrawTextW(GET_HDC(), L"GAME OVER", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
     wchar_t buf[32];
-    swprintf_s(buf, L"SCORE: %d", CTetrisManager::Get()->GetScore());
+    swprintf_s(buf, L"SCORE: %d", m_nDisplayScore);
     DrawTextW(GET_HDC(), buf, -1, &scoreRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
     wchar_t buf2[32];
-    swprintf_s(buf2, L"Level: %d", CTetrisManager::Get()->GetLevel());
+    swprintf_s(buf2, L"Level: %d", m_nDisplayLevel);
     DrawTextW(GET_HDC(), buf2, -1, &levelRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+    DrawTextW(GET_HDC(), L"R: Ïû¨ÏãúÏûë   ESC: Î°úÎπÑÎ°ú", -1, &hintRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-void CBoard::ClearFullLines()
+void CBoard::DrawWinner()
+{
+    if (m_bIsWinner == false)
+        return;
+
+    const LONG left = m_arrBoardPoints[0].x;
+    const LONG top = m_arrBoardPoints[0].y;
+    const LONG right = m_arrBoardPoints[1].x;
+    const LONG bottom = m_arrBoardPoints[2].y;
+
+    LONG centerY = (top + bottom) / 2;
+
+    SetTextColor(GET_HDC(), RGB(255, 215, 0));
+    SetBkMode(GET_HDC(), TRANSPARENT);
+
+    RECT titleRect{ left, centerY - m_BlockSize, right, centerY };
+    RECT hintRect{ left, centerY, right, centerY + m_BlockSize };
+
+    DrawTextW(GET_HDC(), L"YOU WIN!", -1, &titleRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    DrawTextW(GET_HDC(), L"ESC: Î°úÎπÑÎ°ú", -1, &hintRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
+void CBoard::DrawRestartVotes()
+{
+    if (!m_bShowRestartVotes)
+        return;
+
+    const LONG left = m_arrBoardPoints[0].x;
+    const LONG right = m_arrBoardPoints[1].x;
+    const LONG bottom = m_arrBoardPoints[2].y;
+
+    RECT voteRect{ left, bottom - m_BlockSize, right, bottom };
+
+    SetTextColor(GET_HDC(), RGB_WHITE);
+    SetBkMode(GET_HDC(), TRANSPARENT);
+
+    wchar_t buf[32];
+    swprintf_s(buf, L"Ïû¨ÏãúÏûë ÎåÄÍ∏∞: %d/%d", m_nRestartVotes, m_nRestartTotal);
+    DrawTextW(GET_HDC(), buf, -1, &voteRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
+void CBoard::DrawReplayInfo()
+{
+    if (!m_bIsReplayBoard)
+        return;
+
+    POINT boxOrigin = GetNextBoxOrigin();
+    LONG boxSize = m_NextBoxSize * m_BlockSize;
+
+    LONG x = boxOrigin.x;
+    LONG y = boxOrigin.y + boxSize + m_BlockSize * 2;
+
+    SetTextColor(GET_HDC(), RGB_WHITE);
+    SetBkMode(GET_HDC(), TRANSPARENT);
+
+    const wchar_t* lines[] = {
+        L"[Îã®Ï∂ïÌÇ§]",
+        L"SPACE: ÏùºÏãúÏ†ïÏßÄ/Ïû¨ÏÉù",
+        L"UP: Î∞∞ÏÜç Ï¶ùÍ∞Ä",
+        L"DOWN: Î∞∞ÏÜç Í∞êÏÜå",
+        L"ESC: Î°úÎπÑÎ°ú",
+    };
+
+    for (int i = 0; i < 5; ++i)
+        TextOutW(GET_HDC(), x, y + i * (m_BlockSize / 2), lines[i], (int)wcslen(lines[i]));
+
+    wchar_t buf[32];
+    if (m_bReplayPaused)
+        swprintf_s(buf, L"ÏÉÅÌÉú: ÏùºÏãúÏ†ïÏßÄ");
+    else
+        swprintf_s(buf, L"Î∞∞ÏÜç: x%.1f", m_fReplaySpeed);
+
+    TextOutW(GET_HDC(), x, y + 5 * (m_BlockSize / 2) + m_BlockSize / 2, buf, (int)wcslen(buf));
+}
+
+int CBoard::ClearFullLines()
 {
     int nClearedCount = 0;
 
@@ -226,5 +319,5 @@ void CBoard::ClearFullLines()
         ++row;
     }
 
-    CTetrisManager::Get()->AddScore(nClearedCount);
+    return nClearedCount;
 }
